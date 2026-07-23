@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from 'react';
 import {
   ChevronDown,
@@ -54,14 +49,16 @@ interface SubPallet {
 export default function App() {
   const [route, setRoute] = useState<string>('');
 
-  const [pallets, setPallets] = useState<PalletData>({
-    ...INITIAL_PALLETS,
-  });
+  const [pallets, setPallets] =
+    useState<PalletData>({
+      ...INITIAL_PALLETS,
+    });
 
   const [focusedField, setFocusedField] =
     useState<string | null>(null);
 
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving] =
+    useState(false);
 
   const [saveSuccess, setSaveSuccess] =
     useState(false);
@@ -81,34 +78,41 @@ export default function App() {
   const [subDraftType, setSubDraftType] =
     useState<PalletType | ''>('');
 
-  const [subDraftQuantity, setSubDraftQuantity] =
-    useState('');
+  const [
+    subDraftQuantity,
+    setSubDraftQuantity,
+  ] = useState('');
 
   const handleSettingsClick = () => {
     alert(
-      'ระบบเชื่อมต่อ Google Sheet ผ่าน Render Server แล้ว\n' +
-        'ผู้ใช้งานไม่จำเป็นต้องกำหนด Spreadsheet ID'
+      'ระบบเชื่อมต่อ Google Sheet ผ่าน Render Server แล้ว'
     );
   };
 
-  const handleKeypadPress = (key: string) => {
-    if (!focusedField) return;
+  const handleKeypadPress = (
+    key: string
+  ) => {
+    if (!focusedField) {
+      return;
+    }
 
     if (focusedField === 'sub-quantity') {
-      setSubDraftQuantity((previousValue) => {
-        if (previousValue.length >= 4) {
-          return previousValue;
-        }
+      setSubDraftQuantity(
+        (previousValue) => {
+          if (previousValue.length >= 4) {
+            return previousValue;
+          }
 
-        if (
-          previousValue === '' ||
-          previousValue === '0'
-        ) {
-          return key;
-        }
+          if (
+            previousValue === '' ||
+            previousValue === '0'
+          ) {
+            return key;
+          }
 
-        return previousValue + key;
-      });
+          return previousValue + key;
+        }
+      );
 
       return;
     }
@@ -116,7 +120,9 @@ export default function App() {
     const palletType =
       focusedField as PalletType;
 
-    if (!PALLET_TYPES.includes(palletType)) {
+    if (
+      !PALLET_TYPES.includes(palletType)
+    ) {
       return;
     }
 
@@ -142,11 +148,14 @@ export default function App() {
   };
 
   const handleKeypadDelete = () => {
-    if (!focusedField) return;
+    if (!focusedField) {
+      return;
+    }
 
     if (focusedField === 'sub-quantity') {
-      setSubDraftQuantity((previousValue) =>
-        previousValue.slice(0, -1)
+      setSubDraftQuantity(
+        (previousValue) =>
+          previousValue.slice(0, -1)
       );
 
       return;
@@ -155,7 +164,9 @@ export default function App() {
     const palletType =
       focusedField as PalletType;
 
-    if (!PALLET_TYPES.includes(palletType)) {
+    if (
+      !PALLET_TYPES.includes(palletType)
+    ) {
       return;
     }
 
@@ -165,26 +176,33 @@ export default function App() {
 
       return {
         ...previousPallets,
-        currentValue.slice(0, -1),
+        currentValue.slice(
+          0,
+          -1
+        ),
       };
     });
   };
 
   const handleKeypadConfirm = () => {
-    if (!focusedField) return;
+    if (!focusedField) {
+      return;
+    }
 
     if (focusedField === 'sub-quantity') {
       setFocusedField(null);
       return;
     }
 
-    const currentIndex = PALLET_TYPES.indexOf(
-      focusedField as PalletType
-    );
+    const currentIndex =
+      PALLET_TYPES.indexOf(
+        focusedField as PalletType
+      );
 
     if (
       currentIndex >= 0 &&
-      currentIndex < PALLET_TYPES.length - 1
+      currentIndex <
+        PALLET_TYPES.length - 1
     ) {
       setFocusedField(
         PALLET_TYPES[currentIndex + 1]
@@ -198,10 +216,11 @@ export default function App() {
     type: PalletType
   ) => {
     setPallets((previousPallets) => {
-      const currentValue = Number.parseInt(
-        previousPallets[type] || '0',
-        10
-      );
+      const currentValue =
+        Number.parseInt(
+          previousPallets[type] || '0',
+          10
+        );
 
       const newValue = Math.min(
         currentValue + 1,
@@ -219,10 +238,11 @@ export default function App() {
     type: PalletType
   ) => {
     setPallets((previousPallets) => {
-      const currentValue = Number.parseInt(
-        previousPallets[type] || '0',
-        10
-      );
+      const currentValue =
+        Number.parseInt(
+          previousPallets[type] || '0',
+          10
+        );
 
       const newValue = Math.max(
         currentValue - 1,
@@ -238,29 +258,37 @@ export default function App() {
 
   const handleSave = async () => {
     if (!route) {
-      alert('กรุณาเลือก Route ก่อนบันทึก');
+      alert(
+        'กรุณาเลือก Route ก่อนบันทึก'
+      );
       return;
     }
 
-    if (isSaving) return;
+    if (isSaving) {
+      return;
+    }
 
-    const palletTotal = PALLET_TYPES.reduce(
-      (total, type) => {
-        return (
-          total + Number(pallets[type] || 0)
-        );
-      },
-      0
-    );
+    const palletTotal =
+      PALLET_TYPES.reduce(
+        (total, type) => {
+          return (
+            total +
+            Number(pallets[type] || 0)
+          );
+        },
+        0
+      );
 
-    const subPalletTotal = subPallets.reduce(
-      (total, item) => {
-        return (
-          total + Number(item.quantity || 0)
-        );
-      },
-      0
-    );
+    const subPalletTotal =
+      subPallets.reduce(
+        (total, item) => {
+          return (
+            total +
+            Number(item.quantity || 0)
+          );
+        },
+        0
+      );
 
     if (
       palletTotal === 0 &&
@@ -275,12 +303,12 @@ export default function App() {
     setIsSaving(true);
 
     try {
-      const subPalletsText = subPallets
-        .map(
-          (item) =>
-            `${item.name} (${item.type}: ${item.quantity})`
-        )
-        .join('\n');
+      const subPalletsText =
+        subPallets
+          .map((item) => {
+            return `${item.name} (${item.type}: ${item.quantity})`;
+          })
+          .join('\n');
 
       await savePalletData({
         route,
@@ -361,7 +389,9 @@ export default function App() {
     }
 
     if (!subDraftType) {
-      alert('กรุณาเลือกประเภทพาเลท');
+      alert(
+        'กรุณาเลือกประเภทพาเลท'
+      );
       return;
     }
 
@@ -378,7 +408,8 @@ export default function App() {
 
     const id =
       typeof crypto !== 'undefined' &&
-      typeof crypto.randomUUID === 'function'
+      typeof crypto.randomUUID ===
+        'function'
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random()}`;
 
@@ -389,10 +420,12 @@ export default function App() {
       quantity: quantity.toString(),
     };
 
-    setSubPallets((previousItems) => [
-      ...previousItems,
-      newSubPallet,
-    ]);
+    setSubPallets(
+      (previousItems) => [
+        ...previousItems,
+        newSubPallet,
+      ]
+    );
 
     setSubDraftName('');
     setSubDraftType('');
@@ -404,10 +437,12 @@ export default function App() {
   const handleRemoveSubPallet = (
     subPalletId: string
   ) => {
-    setSubPallets((previousItems) =>
-      previousItems.filter(
-        (item) => item.id !== subPalletId
-      )
+    setSubPallets(
+      (previousItems) =>
+        previousItems.filter(
+          (item) =>
+            item.id !== subPalletId
+        )
     );
   };
 
@@ -419,7 +454,9 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans pb-24 select-none relative">
       <Header
-        onSettingsClick={handleSettingsClick}
+        onSettingsClick={
+          handleSettingsClick
+        }
       />
 
       <main
@@ -429,12 +466,11 @@ export default function App() {
             : 'pb-28'
         }`}
       >
-        {/* Route Selection */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
           <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wide">
-            Route Selection{' '}
-            <span className="text-red-500">
-              *
+            Route Selection
+            <span className="text-red-500 ml-2">
+              จำเป็น
             </span>
           </label>
 
@@ -443,7 +479,9 @@ export default function App() {
               <select
                 value={route}
                 onChange={(event) =>
-                  setRoute(event.target.value)
+                  setRoute(
+                    event.target.value
+                  )
                 }
                 className="w-full appearance-none bg-slate-50 border-2 border-blue-500 rounded-xl p-3 sm:p-4 pr-10 sm:pr-12 text-lg sm:text-xl font-bold text-slate-800 focus:outline-none transition-colors"
               >
@@ -455,14 +493,16 @@ export default function App() {
                   เลือก Route
                 </option>
 
-                {ROUTES.map((routeName) => (
-                  <option
-                    key={routeName}
-                    value={routeName}
-                  >
-                    {routeName}
-                  </option>
-                ))}
+                {ROUTES.map(
+                  (routeName) => (
+                    <option
+                      key={routeName}
+                      value={routeName}
+                    >
+                      {routeName}
+                    </option>
+                  )
+                )}
               </select>
 
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-500">
@@ -483,36 +523,36 @@ export default function App() {
           </div>
         </div>
 
-        {/* Main Pallet List */}
         <div className="bg-white flex-1 p-5 rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col mb-2">
           <label className="block text-xs font-bold text-slate-500 uppercase mb-4 tracking-wide">
             Quantity Entry
           </label>
 
           <div className="flex-1 flex flex-col overflow-y-auto">
-            {PALLET_TYPES.map((type) => (
-              <PalletRow
-                key={type}
-                type={type}
-                value={pallets[type]}
-                isFocused={
-                  focusedField === type
-                }
-                onFocus={() =>
-                  setFocusedField(type)
-                }
-                onIncrement={() =>
-                  handleIncrement(type)
-                }
-                onDecrement={() =>
-                  handleDecrement(type)
-                }
-              />
-            ))}
+            {PALLET_TYPES.map(
+              (type) => (
+                <PalletRow
+                  key={type}
+                  type={type}
+                  value={pallets[type]}
+                  isFocused={
+                    focusedField === type
+                  }
+                  onFocus={() =>
+                    setFocusedField(type)
+                  }
+                  onIncrement={() =>
+                    handleIncrement(type)
+                  }
+                  onDecrement={() =>
+                    handleDecrement(type)
+                  }
+                />
+              )
+            )}
           </div>
         </div>
 
-        {/* Sub Pallet List */}
         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-slate-700 font-bold text-sm uppercase tracking-wide">
@@ -543,54 +583,55 @@ export default function App() {
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {subPallets.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex flex-col p-3 bg-slate-50 border border-slate-200 rounded-xl gap-2"
-                >
-                  <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                    <span className="font-bold text-sm text-slate-600">
-                      Sub:{' '}
-                      <span className="text-blue-700">
-                        {item.name}
+              {subPallets.map(
+                (item) => (
+                  <div
+                    key={item.id}
+                    className="flex flex-col p-3 bg-slate-50 border border-slate-200 rounded-xl gap-2"
+                  >
+                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                      <span className="font-bold text-sm text-slate-600">
+                        Sub:{' '}
+                        <span className="text-blue-700">
+                          {item.name}
+                        </span>
                       </span>
-                    </span>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleRemoveSubPallet(
-                          item.id
-                        )
-                      }
-                      aria-label={`ลบ ${item.name}`}
-                      className="text-red-400 p-1 active:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <X
-                        size={16}
-                        strokeWidth={3}
-                      />
-                    </button>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3 font-bold text-slate-700">
-                      <span className="w-3 h-3 rounded-full bg-slate-400" />
-                      {item.type}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleRemoveSubPallet(
+                            item.id
+                          )
+                        }
+                        aria-label={`ลบ ${item.name}`}
+                        className="text-red-400 p-1 active:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <X
+                          size={16}
+                          strokeWidth={3}
+                        />
+                      </button>
                     </div>
 
-                    <span className="text-2xl font-black text-blue-800 w-12 text-right">
-                      {item.quantity}
-                    </span>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-3 font-bold text-slate-700">
+                        <span className="w-3 h-3 rounded-full bg-slate-400" />
+                        {item.type}
+                      </div>
+
+                      <span className="text-2xl font-black text-blue-800 w-12 text-right">
+                        {item.quantity}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              )}
             </div>
           )}
         </div>
       </main>
 
-      {/* Save Button */}
       <div
         className={`fixed bottom-0 left-0 right-0 h-24 bg-white border-t border-slate-200 px-6 py-4 flex items-center transition-transform duration-300 ${
           focusedField
@@ -637,7 +678,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Numeric Keypad */}
       <Keypad
         isVisible={Boolean(focusedField)}
         onKeyPress={handleKeypadPress}
@@ -647,14 +687,16 @@ export default function App() {
           setFocusedField(null)
         }
         title={
-          focusedField === 'sub-quantity'
+          focusedField ===
+          'sub-quantity'
             ? 'SUB PALLET'
             : focusedField
               ? `${focusedField.toUpperCase()} PALLET`
               : ''
         }
         currentValue={
-          focusedField === 'sub-quantity'
+          focusedField ===
+          'sub-quantity'
             ? subDraftQuantity
             : focusedField &&
                 PALLET_TYPES.includes(
@@ -667,18 +709,17 @@ export default function App() {
         }
       />
 
-      {/* Overlay behind Keypad */}
-      {focusedField && !isSubModalOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-transparent"
-          onClick={() =>
-            setFocusedField(null)
-          }
-          aria-hidden="true"
-        />
-      )}
+      {focusedField &&
+        !isSubModalOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-transparent"
+            onClick={() =>
+              setFocusedField(null)
+            }
+            aria-hidden="true"
+          />
+        )}
 
-      {/* Add Sub Pallet Modal */}
       {isSubModalOpen && (
         <div className="fixed inset-0 z-[45] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col">
@@ -689,7 +730,9 @@ export default function App() {
 
               <button
                 type="button"
-                onClick={handleCloseSubModal}
+                onClick={
+                  handleCloseSubModal
+                }
                 aria-label="ปิด"
                 className="text-slate-400 p-2 active:bg-slate-200 rounded-full transition-colors"
               >
@@ -700,9 +743,9 @@ export default function App() {
             <div className="p-5 flex flex-col gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                  ชื่อ Sub / รหัส{' '}
-                  <span className="text-red-500">
-                    *
+                  ชื่อ Sub หรือรหัส
+                  <span className="text-red-500 ml-2">
+                    จำเป็น
                   </span>
                 </label>
 
@@ -722,9 +765,9 @@ export default function App() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                  ประเภทพาเลท{' '}
-                  <span className="text-red-500">
-                    *
+                  ประเภทพาเลท
+                  <span className="text-red-500 ml-2">
+                    จำเป็น
                   </span>
                 </label>
 
@@ -745,18 +788,113 @@ export default function App() {
                     เลือกประเภท
                   </option>
 
-                  {PALLET_TYPES.map((type) => (
-                    <option
-                      key={type}
-                      value={type}
-                    >
-                      {type}
-                    </option>
-                  ))}
+                  {PALLET_TYPES.map(
+                    (type) => (
+                      <option
+                        key={type}
+                        value={type}
+                      >
+                        {type}
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                  จำนวน{' '}
-                  <
+                  จำนวน
+                  <span className="text-red-500 ml-2">
+                    จำเป็น
+                  </span>
+                </label>
+
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() =>
+                    setFocusedField(
+                      'sub-quantity'
+                    )
+                  }
+                  onKeyDown={(event) => {
+                    if (
+                      event.key ===
+                        'Enter' ||
+                      event.key === ' '
+                    ) {
+                      setFocusedField(
+                        'sub-quantity'
+                      );
+                    }
+                  }}
+                  className={`w-full h-16 border-2 rounded-xl flex items-center justify-center text-3xl font-black transition-colors ${
+                    focusedField ===
+                    'sub-quantity'
+                      ? 'border-blue-500 bg-blue-50 text-blue-800'
+                      : 'border-slate-200 bg-slate-50 text-slate-800'
+                  }`}
+                >
+                  {subDraftQuantity || '0'}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={
+                  handleAddSubPallet
+                }
+                className="w-full h-14 mt-2 bg-blue-600 text-white rounded-xl font-bold text-lg active:bg-blue-700 transition-colors shadow-lg shadow-blue-600/30"
+              >
+                เพิ่มรายการ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {saveSuccess && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-8 flex flex-col items-center text-center shadow-2xl animate-in zoom-in-75 duration-500 ease-out">
+            <div className="w-24 h-24 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mb-6 shadow-inner animate-bounce">
+              <PartyPopper
+                size={48}
+                strokeWidth={2.5}
+              />
+            </div>
+
+            <h2 className="text-3xl font-black text-slate-800 mb-2">
+              บันทึกสำเร็จ
+            </h2>
+
+            <p className="text-slate-500 font-medium mb-8">
+              ข้อมูลพาเลทถูกส่งเข้าสู่ระบบเรียบร้อยแล้ว
+            </p>
+
+            <button
+              type="button"
+              onClick={
+                handleCloseSuccess
+              }
+              className="w-full bg-green-500 text-white font-bold text-xl py-4 rounded-xl active:bg-green-600 active:scale-95 transition-all shadow-lg shadow-green-500/30"
+            >
+              ดำเนินการต่อ
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isScanning && (
+        <Scanner
+          onScan={(scannedRoute) => {
+            setRoute(scannedRoute);
+            setIsScanning(false);
+          }}
+          onClose={() =>
+            setIsScanning(false)
+          }
+        />
+      )}
+    </div>
+  );
+}
