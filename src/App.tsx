@@ -52,18 +52,16 @@ interface SubPallet {
 }
 
 export default function App() {
-  const [route, setRoute] = useState('');
+  const [route, setRoute] = useState<string>('');
 
-  const [pallets, setPallets] =
-    useState<PalletData>({
-      ...INITIAL_PALLETS,
-    });
+  const [pallets, setPallets] = useState<PalletData>({
+    ...INITIAL_PALLETS,
+  });
 
   const [focusedField, setFocusedField] =
     useState<string | null>(null);
 
-  const [isSaving, setIsSaving] =
-    useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [saveSuccess, setSaveSuccess] =
     useState(false);
@@ -88,8 +86,8 @@ export default function App() {
 
   const handleSettingsClick = () => {
     alert(
-      'Google Sheet ถูกตั้งค่าผ่าน Render Server แล้ว\n' +
-        'ผู้ใช้งานไม่จำเป็นต้องกรอก Spreadsheet ID'
+      'ระบบเชื่อมต่อ Google Sheet ผ่าน Render Server แล้ว\n' +
+        'ผู้ใช้งานไม่จำเป็นต้องกำหนด Spreadsheet ID'
     );
   };
 
@@ -102,10 +100,14 @@ export default function App() {
           return previousValue;
         }
 
-        return previousValue === '' ||
+        if (
+          previousValue === '' ||
           previousValue === '0'
-          ? key
-          : previousValue + key;
+        ) {
+          return key;
+        }
+
+        return previousValue + key;
       });
 
       return;
@@ -242,23 +244,26 @@ export default function App() {
 
     if (isSaving) return;
 
-    const normalPalletTotal =
-      PALLET_TYPES.reduce(
-        (total, type) =>
-          total + Number(pallets[type] || 0),
-        0
-      );
+    const palletTotal = PALLET_TYPES.reduce(
+      (total, type) => {
+        return (
+          total + Number(pallets[type] || 0)
+        );
+      },
+      0
+    );
 
-    const subPalletTotal =
-      subPallets.reduce(
-        (total, item) =>
-          total +
-          Number(item.quantity || 0),
-        0
-      );
+    const subPalletTotal = subPallets.reduce(
+      (total, item) => {
+        return (
+          total + Number(item.quantity || 0)
+        );
+      },
+      0
+    );
 
     if (
-      normalPalletTotal === 0 &&
+      palletTotal === 0 &&
       subPalletTotal === 0
     ) {
       alert(
@@ -406,6 +411,11 @@ export default function App() {
     );
   };
 
+  const handleCloseSubModal = () => {
+    setIsSubModalOpen(false);
+    setFocusedField(null);
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans pb-24 select-none relative">
       <Header
@@ -440,6 +450,7 @@ export default function App() {
                 <option
                   value=""
                   disabled
+                  className="font-sans text-lg"
                 >
                   เลือก Route
                 </option>
@@ -464,7 +475,7 @@ export default function App() {
               onClick={() =>
                 setIsScanning(true)
               }
-              aria-label="Scan route"
+              aria-label="สแกน Route"
               className="bg-blue-100 text-blue-700 w-[60px] h-[60px] rounded-xl border-2 border-blue-200 active:bg-blue-200 flex items-center justify-center shrink-0 transition-colors"
             >
               <ScanLine size={28} />
@@ -618,6 +629,7 @@ export default function App() {
                     d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
                   />
                 </svg>
+
                 SAVE
               </>
             )}
@@ -655,7 +667,7 @@ export default function App() {
         }
       />
 
-      {/* Keypad Overlay */}
+      {/* Overlay behind Keypad */}
       {focusedField && !isSubModalOpen && (
         <div
           className="fixed inset-0 z-30 bg-transparent"
@@ -677,10 +689,7 @@ export default function App() {
 
               <button
                 type="button"
-                onClick={() => {
-                  setIsSubModalOpen(false);
-                  setFocusedField(null);
-                }}
+                onClick={handleCloseSubModal}
                 aria-label="ปิด"
                 className="text-slate-400 p-2 active:bg-slate-200 rounded-full transition-colors"
               >
@@ -729,7 +738,10 @@ export default function App() {
                   }
                   className="w-full appearance-none bg-slate-50 border-2 border-slate-200 rounded-xl p-4 text-lg font-bold text-slate-800 focus:outline-none focus:border-blue-500 transition-colors"
                 >
-                  <option value="" disabled>
+                  <option
+                    value=""
+                    disabled
+                  >
                     เลือกประเภท
                   </option>
 
@@ -747,94 +759,4 @@ export default function App() {
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
                   จำนวน{' '}
-                  <span className="text-red-500">
-                    *
-                  </span>
-                </label>
-
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() =>
-                    setFocusedField(
-                      'sub-quantity'
-                    )
-                  }
-                  onKeyDown={(event) => {
-                    if (
-                      event.key === 'Enter' ||
-                      event.key === ' '
-                    ) {
-                      setFocusedField(
-                        'sub-quantity'
-                      );
-                    }
-                  }}
-                  className={`w-full h-16 border-2 rounded-xl flex items-center justify-center text-3xl font-black transition-colors ${
-                    focusedField ===
-                    'sub-quantity'
-                      ? 'border-blue-500 bg-blue-50 text-blue-800'
-                      : 'border-slate-200 bg-slate-50 text-slate-800'
-                  }`}
-                >
-                  {subDraftQuantity || '0'}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleAddSubPallet}
-                className="w-full h-14 mt-2 bg-blue-600 text-white rounded-xl font-bold text-lg active:bg-blue-700 transition-colors shadow-lg shadow-blue-600/30"
-              >
-                เพิ่มรายการ
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success Modal */}
-      {saveSuccess && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white rounded-3xl w-full max-w-sm p-8 flex flex-col items-center text-center shadow-2xl animate-in zoom-in-75 duration-500 ease-out">
-            <div className="w-24 h-24 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mb-6 shadow-inner animate-bounce">
-              <PartyPopper
-                size={48}
-                strokeWidth={2.5}
-              />
-            </div>
-
-            <h2 className="text-3xl font-black text-slate-800 mb-2">
-              บันทึกสำเร็จ!
-            </h2>
-
-            <p className="text-slate-500 font-medium mb-8">
-              ข้อมูลพาเลทถูกส่งเข้าสู่ระบบเรียบร้อยแล้ว
-            </p>
-
-            <button
-              type="button"
-              onClick={handleCloseSuccess}
-              className="w-full bg-green-500 text-white font-bold text-xl py-4 rounded-xl active:bg-green-600 active:scale-95 transition-all shadow-lg shadow-green-500/30"
-            >
-              ดำเนินการต่อ
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Scanner */}
-      {isScanning && (
-        <Scanner
-          onScan={(scannedRoute) => {
-            setRoute(scannedRoute);
-            setIsScanning(false);
-          }}
-          onClose={() =>
-            setIsScanning(false)
-          }
-        />
-      )}
-    </div>
-  );
-}
+                  <
