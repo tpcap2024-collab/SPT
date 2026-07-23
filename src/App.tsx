@@ -174,9 +174,12 @@ export default function App() {
       const currentValue =
         previousPallets[palletType];
 
+      const newValue =
+        currentValue.slice(0, -1);
+
       return {
         ...previousPallets,
-        currentValue.slice(0, -1),
+        newValue,
       };
     });
   };
@@ -480,4 +483,145 @@ export default function App() {
                     event.target.value
                   )
                 }
-                className="w-full appearance-none bg-slate-50 border-2 border-blue-500 rounded-xl p-3 sm:p-4 pr-10 sm:pr-12 text-lg sm:text-xl font-bold 
+                className="w-full appearance-none bg-slate-50 border-2 border-blue-500 rounded-xl p-3 sm:p-4 pr-10 sm:pr-12 text-lg sm:text-xl font-bold text-slate-800 focus:outline-none transition-colors"
+              >
+                <option
+                  value=""
+                  disabled
+                  className="font-sans text-lg"
+                >
+                  เลือก Route
+                </option>
+
+                {ROUTES.map(
+                  (routeName) => (
+                    <option
+                      key={routeName}
+                      value={routeName}
+                    >
+                      {routeName}
+                    </option>
+                  )
+                )}
+              </select>
+
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-500">
+                <ChevronDown size={24} />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                setIsScanning(true)
+              }
+              aria-label="สแกน Route"
+              className="bg-blue-100 text-blue-700 w-[60px] h-[60px] rounded-xl border-2 border-blue-200 active:bg-blue-200 flex items-center justify-center shrink-0 transition-colors"
+            >
+              <ScanLine size={28} />
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white flex-1 p-5 rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col mb-2">
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-4 tracking-wide">
+            Quantity Entry
+          </label>
+
+          <div className="flex-1 flex flex-col overflow-y-auto">
+            {PALLET_TYPES.map(
+              (type) => (
+                <PalletRow
+                  key={type}
+                  type={type}
+                  value={pallets[type]}
+                  isFocused={
+                    focusedField === type
+                  }
+                  onFocus={() =>
+                    setFocusedField(type)
+                  }
+                  onIncrement={() =>
+                    handleIncrement(type)
+                  }
+                  onDecrement={() =>
+                    handleDecrement(type)
+                  }
+                />
+              )
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-slate-700 font-bold text-sm uppercase tracking-wide">
+              พาเลทเปล่าส่ง Sub
+            </h2>
+
+            <button
+              type="button"
+              onClick={() => {
+                setFocusedField(null);
+                setIsSubModalOpen(true);
+              }}
+              className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg border border-blue-200 font-bold text-sm flex items-center gap-1 active:bg-blue-100 transition-colors"
+            >
+              <Plus
+                size={16}
+                strokeWidth={3}
+              />
+              เพิ่ม
+            </button>
+          </div>
+
+          {subPallets.length === 0 ? (
+            <div className="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-4 text-center">
+              <p className="text-slate-400 text-xs font-semibold">
+                ไม่มีรายการพาเลทส่ง Sub
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {subPallets.map(
+                (item) => (
+                  <div
+                    key={item.id}
+                    className="flex flex-col p-3 bg-slate-50 border border-slate-200 rounded-xl gap-2"
+                  >
+                    <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                      <span className="font-bold text-sm text-slate-600">
+                        Sub:{' '}
+                        <span className="text-blue-700">
+                          {item.name}
+                        </span>
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleRemoveSubPallet(
+                            item.id
+                          )
+                        }
+                        aria-label={`ลบ ${item.name}`}
+                        className="text-red-400 p-1 active:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <X
+                          size={16}
+                          strokeWidth={3}
+                        />
+                      </button>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-3 font-bold text-slate-700">
+                        <span className="w-3 h-3 rounded-full bg-slate-400" />
+                        {item.type}
+                      </div>
+
+                      <span className="text-2xl font-black text-blue-800 w-12 text-right">
+                        {item.quantity}
+                      </span>
+                    </div>
+                  </div>
