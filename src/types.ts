@@ -20,3 +20,4 @@ export const PALLET_TYPES: PalletType[] = [
   'Wood',
   'Pallet return',
 ];
+`
