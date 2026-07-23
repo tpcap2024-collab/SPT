@@ -1,14 +1,14 @@
-export type PalletType = 'Green' | 'Cream' | 'Blue' | 'Box Sleeve' | 'Wing' | 'Glass' | 'Wood';
+export type PalletType =
+  | 'Green'
+  | 'Cream'
+  | 'Blue'
+  | 'Box Sleeve'
+  | 'Wing'
+  | 'Glass'
+  | 'Wood'
+  | 'Pallet return';
 
-export interface PalletData {
-  'Green': string;
-  'Cream': string;
-  'Blue': string;
-  'Box Sleeve': string;
-  'Wing': string;
-  'Glass': string;
-  'Wood': string;
-}
+export type PalletData = Record<PalletType, string>;
 
 export const PALLET_TYPES: PalletType[] = [
   'Green',
@@ -17,5 +17,6 @@ export const PALLET_TYPES: PalletType[] = [
   'Box Sleeve',
   'Wing',
   'Glass',
-  'Wood'
+  'Wood',
+  'Pallet return',
 ];
