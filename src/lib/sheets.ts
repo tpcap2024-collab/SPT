@@ -1,29 +1,58 @@
-import { getAccessToken } from './firebase';
+export interface PalletPayload {
+  route: string;
+  green: number;
+  cream: number;
+  blue: number;
+  boxSleeve: number;
+  wing: number;
+  glass: number;
+  wood: number;
+  sub: string;
+  palletReturn: number;
+}
 
-export async function appendToSheet(spreadsheetId: string, sheetName: string, values: any[][]) {
-  const accessToken = await getAccessToken();
-  if (!accessToken) throw new Error('Not authenticated with Google');
+interface ApiResponse {
+  success: boolean;
+  message?: string;
+  updatedRange?: string;
+  updatedRows?: number;
+}
 
-  const range = `${sheetName}!A:Z`;
-  
-  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED`, {
-    method: 'POST',
-    headers: { 
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      range,
-      majorDimension: 'ROWS',
-      values,
-    }),
-  });
+const apiUrl = String(
+  import.meta.env.VITE_API_URL || ''
+).replace(/\/$/, '');
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error('Google Sheets API Error:', errorText);
-    throw new Error('Failed to save to Google Sheets');
+export async function savePalletData(
+  payload: PalletPayload
+): Promise<ApiResponse> {
+  if (!apiUrl) {
+    throw new Error(
+      'ไม่พบ VITE_API_URL กรุณาตรวจ Environment Variables'
+    );
   }
 
-  return await res.json();
+  const response = await fetch(
+    `${apiUrl}/api/pallets`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  const result = (await response.json().catch(() => ({
+    success: false,
+    message: 'Server ส่งข้อมูลกลับมาไม่ถูกต้อง',
+  }))) as ApiResponse;
+
+  if (!response.ok || !result.success) {
+    throw new Error(
+      result.message ||
+        `ไม่สามารถบันทึกข้อมูลได้ (${response.status})`
+    );
+  }
+
+  return result;
 }
