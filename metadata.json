@@ -1,0 +1,6 @@
+{
+  "name": "Smart Pallet Tracking",
+  "description": "Warehouse pallet tracking system optimized for fast data entry on Android tablets.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
