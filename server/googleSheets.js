@@ -1,8 +1,3 @@
-import { google } from 'googleapis';
-
-const SHEETS_SCOPE =
-  'https://www.googleapis.com/auth/spreadsheets';
-
 function getRequiredEnvironmentVariable(name) {
   const value = process.env[name];
 
@@ -13,39 +8,6 @@ function getRequiredEnvironmentVariable(name) {
   }
 
   return value.trim();
-}
-
-function getGooglePrivateKey() {
-  const privateKey = getRequiredEnvironmentVariable(
-    'GOOGLE_PRIVATE_KEY'
-  );
-
-  /*
-   * รองรับทั้งสองรูปแบบ:
-   *
-   * 1. Private key ที่ Render เก็บแบบหลายบรรทัดจริง
-   * 2. Private key ที่เก็บ newline เป็นข้อความ \n
-   */
-  return privateKey.replace(/\\n/g, '\n');
-}
-
-function createGoogleAuth() {
-  const serviceAccountEmail =
-    getRequiredEnvironmentVariable(
-      'GOOGLE_SERVICE_ACCOUNT_EMAIL'
-    );
-
-  const privateKey = getGooglePrivateKey();
-
-  return new google.auth.JWT({
-    email: serviceAccountEmail,
-    key: privateKey,
-    scopes: [SHEETS_SCOPE],
-  });
-}
-
-function escapeSheetName(sheetName) {
-  return sheetName.replace(/'/g, "''");
 }
 
 function normalizeQuantity(value) {
@@ -64,18 +26,7 @@ function normalizeQuantity(value) {
   return quantity;
 }
 
-export async function appendPalletTransaction(
-  data
-) {
-  const spreadsheetId =
-    getRequiredEnvironmentVariable(
-      'GOOGLE_SPREADSHEET_ID'
-    );
-
-  const sheetName =
-    process.env.GOOGLE_SHEET_NAME?.trim() ||
-    'Actual data';
-
+function validateTransaction(data) {
   if (
     !data ||
     typeof data !== 'object' ||
@@ -90,77 +41,157 @@ export async function appendPalletTransaction(
     typeof data.stampTime !== 'string' ||
     !data.stampTime.trim()
   ) {
-    throw new Error('Stamp time is required');
+    throw new Error(
+      'Stamp time is required'
+    );
   }
 
   if (
     typeof data.route !== 'string' ||
     !data.route.trim()
   ) {
-    throw new Error('Route is required');
+    throw new Error(
+      'Route is required'
+    );
   }
 
   if (
     typeof data.sub !== 'string' ||
     data.sub.length > 5000
   ) {
-    throw new Error('Invalid Sub pallet data');
+    throw new Error(
+      'Invalid Sub pallet data'
+    );
+  }
+}
+
+async function readScriptResponse(response) {
+  const responseText =
+    await response.text();
+
+  if (!responseText) {
+    throw new Error(
+      'Google Apps Script returned an empty response'
+    );
   }
 
-  const row = [
-    data.stampTime.trim(),
-    data.route.trim(),
-    normalizeQuantity(data.green),
-    normalizeQuantity(data.cream),
-    normalizeQuantity(data.blue),
-    normalizeQuantity(data.boxSleeve),
-    normalizeQuantity(data.wing),
-    normalizeQuantity(data.glass),
-    normalizeQuantity(data.wood),
-    data.sub,
-    normalizeQuantity(data.palletReturn),
-  ];
+  try {
+    return JSON.parse(responseText);
+  } catch {
+    console.error(
+      'Invalid Google Apps Script response:',
+      responseText
+    );
 
-  const auth = createGoogleAuth();
+    throw new Error(
+      'Google Apps Script returned an invalid response'
+    );
+  }
+}
 
-  const sheets = google.sheets({
-    version: 'v4',
-    auth,
-  });
+export async function appendPalletTransaction(
+  data
+) {
+  validateTransaction(data);
 
-  const range =
-    `'${escapeSheetName(sheetName)}'!A:K`;
+  const scriptUrl =
+    getRequiredEnvironmentVariable(
+      'GOOGLE_SCRIPT_URL'
+    );
 
-  const response =
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range,
-      valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS',
-      requestBody: {
-        range,
-        majorDimension: 'ROWS',
-        values: [row],
-      },
-    });
+  const apiSecret =
+    getRequiredEnvironmentVariable(
+      'SPT_API_SECRET'
+    );
+
+  const payload = {
+    apiSecret,
+    stampTime: data.stampTime.trim(),
+    route: data.route.trim(),
+    green: normalizeQuantity(
+      data.green
+    ),
+    cream: normalizeQuantity(
+      data.cream
+    ),
+    blue: normalizeQuantity(
+      data.blue
+    ),
+    boxSleeve: normalizeQuantity(
+      data.boxSleeve
+    ),
+    wing: normalizeQuantity(
+      data.wing
+    ),
+    glass: normalizeQuantity(
+      data.glass
+    ),
+    wood: normalizeQuantity(
+      data.wood
+    ),
+    sub: data.sub.trim(),
+    palletReturn: normalizeQuantity(
+      data.palletReturn
+    ),
+  };
+
+  let response;
+
+  try {
+    response = await fetch(
+      scriptUrl,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type':
+            'text/plain;charset=utf-8',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+        redirect: 'follow',
+      }
+    );
+  } catch (error) {
+    console.error(
+      'Unable to connect to Google Apps Script:',
+      error
+    );
+
+    throw new Error(
+      'Unable to connect to Google Apps Script'
+    );
+  }
+
+  const result =
+    await readScriptResponse(response);
+
+  if (!response.ok) {
+    console.error(
+      'Google Apps Script HTTP error:',
+      response.status,
+      result
+    );
+
+    throw new Error(
+      result.message ||
+        `Google Apps Script HTTP error ${response.status}`
+    );
+  }
+
+  if (!result.success) {
+    throw new Error(
+      result.message ||
+        'Google Apps Script could not save the data'
+    );
+  }
 
   return {
-    spreadsheetId:
-      response.data.spreadsheetId || spreadsheetId,
-
-    tableRange:
-      response.data.tableRange || null,
-
-    updatedRange:
-      response.data.updates?.updatedRange || null,
-
-    updatedRows:
-      response.data.updates?.updatedRows || 0,
-
-    updatedColumns:
-      response.data.updates?.updatedColumns || 0,
-
-    updatedCells:
-      response.data.updates?.updatedCells || 0,
+    updatedRange: null,
+    updatedRows: 1,
+    updatedRow:
+      result.updatedRow || null,
+    message:
+      result.message ||
+      'Data saved successfully',
   };
 }
