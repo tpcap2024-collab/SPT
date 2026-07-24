@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ChevronDown,
   ScanLine,
   Plus,
   X,
   PartyPopper,
+  RefreshCw,
 } from 'lucide-react';
 
 import { Header } from './components/Header';
@@ -18,15 +19,10 @@ import {
   PALLET_TYPES,
 } from './types';
 
-import { savePalletData } from './lib/sheets';
-
-const ROUTES = [
-  'Route 01 - North',
-  'Route 02 - South',
-  'Route 03 - East',
-  'Route 04 - West',
-  'Route 05 - Central',
-];
+import {
+  getRoutes,
+  savePalletData,
+} from './lib/sheets';
 
 const INITIAL_PALLETS: PalletData = {
   Green: '',
@@ -47,9 +43,14 @@ interface SubPallet {
 
 export default function App() {
   const [route, setRoute] = useState<string>('');
+  const [routes, setRoutes] = useState<string[]>([]);
+  const [isLoadingRoutes, setIsLoadingRoutes] = useState(true);
+  const [routeError, setRouteError] = useState('');
+
   const [pallets, setPallets] = useState<PalletData>({
     ...INITIAL_PALLETS,
   });
+
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -59,6 +60,43 @@ export default function App() {
   const [subDraftName, setSubDraftName] = useState('');
   const [subDraftType, setSubDraftType] = useState<PalletType | ''>('');
   const [subDraftQuantity, setSubDraftQuantity] = useState('');
+
+  const loadRoutes = async () => {
+    setIsLoadingRoutes(true);
+    setRouteError('');
+
+    try {
+      const result = await getRoutes();
+      setRoutes(result.routes);
+
+      if (
+        route &&
+        !result.routes.includes(route)
+      ) {
+        setRoute('');
+      }
+
+      if (result.routes.length === 0) {
+        setRouteError('ไม่พบรายการ Route ใน Google Sheet');
+      }
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'ไม่สามารถโหลดรายการ Route ได้';
+
+      console.error('Load routes failed:', error);
+      setRoutes([]);
+      setRoute('');
+      setRouteError(message);
+    } finally {
+      setIsLoadingRoutes(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadRoutes();
+  }, []);
 
   const handleSettingsClick = () => {
     alert('ระบบเชื่อมต่อ Google Sheet ผ่าน Render Server แล้ว');
@@ -75,7 +113,10 @@ export default function App() {
           return previousValue;
         }
 
-        if (previousValue === '' || previousValue === '0') {
+        if (
+          previousValue === '' ||
+          previousValue === '0'
+        ) {
           return key;
         }
 
@@ -98,7 +139,8 @@ export default function App() {
       }
 
       const newValue =
-        currentValue === '' || currentValue === '0'
+        currentValue === '' ||
+        currentValue === '0'
           ? key
           : currentValue + key;
 
@@ -115,7 +157,9 @@ export default function App() {
     }
 
     if (focusedField === 'sub-quantity') {
-      setSubDraftQuantity((previousValue) => previousValue.slice(0, -1));
+      setSubDraftQuantity((previousValue) =>
+        previousValue.slice(0, -1)
+      );
       return;
     }
 
@@ -196,6 +240,11 @@ export default function App() {
       return;
     }
 
+    if (!routes.includes(route)) {
+      alert('Route ที่เลือกไม่มีอยู่ในรายการ กรุณาโหลด Route ใหม่');
+      return;
+    }
+
     if (isSaving) {
       return;
     }
@@ -210,7 +259,10 @@ export default function App() {
       0
     );
 
-    if (mainPalletTotal === 0 && subPalletTotal === 0) {
+    if (
+      mainPalletTotal === 0 &&
+      subPalletTotal === 0
+    ) {
       alert('กรุณาระบุจำนวนพาเลทอย่างน้อย 1 รายการ');
       return;
     }
@@ -219,7 +271,9 @@ export default function App() {
 
     try {
       const subPalletsText = subPallets
-        .map((item) => `${item.name} (${item.type}: ${item.quantity})`)
+        .map((item) =>
+          `${item.name} (${item.type}: ${item.quantity})`
+        )
         .join('\n');
 
       const returnTotals: Record<PalletType, number> = {
@@ -234,7 +288,8 @@ export default function App() {
 
       subPallets.forEach((item) => {
         const quantity = Number(item.quantity || 0);
-        returnTotals[item.type] = returnTotals[item.type] + quantity;
+        returnTotals[item.type] =
+          returnTotals[item.type] + quantity;
       });
 
       const returnTotal =
@@ -306,7 +361,11 @@ export default function App() {
       return;
     }
 
-    if (!Number.isInteger(quantity) || quantity <= 0 || quantity > 9999) {
+    if (
+      !Number.isInteger(quantity) ||
+      quantity <= 0 ||
+      quantity > 9999
+    ) {
       alert('กรุณาระบุจำนวนระหว่าง 1 ถึง 9999');
       return;
     }
@@ -347,6 +406,19 @@ export default function App() {
     setFocusedField(null);
   };
 
+  const handleScannedRoute = (scannedRoute: string) => {
+    const normalizedRoute = scannedRoute.trim();
+
+    if (!routes.includes(normalizedRoute)) {
+      alert('ไม่พบ Route ที่สแกนในแท็บ Route');
+      setIsScanning(false);
+      return;
+    }
+
+    setRoute(normalizedRoute);
+    setIsScanning(false);
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans pb-24 select-none relative">
       <Header onSettingsClick={handleSettingsClick} />
@@ -357,23 +429,43 @@ export default function App() {
         }`}
       >
         <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-2 tracking-wide">
-            Route Selection
-            <span className="text-red-500 ml-2">จำเป็น</span>
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">
+              Route Selection
+              <span className="text-red-500 ml-2">จำเป็น</span>
+            </label>
+
+            <button
+              type="button"
+              onClick={() => void loadRoutes()}
+              disabled={isLoadingRoutes}
+              className="text-blue-600 text-xs font-bold flex items-center gap-1 disabled:text-slate-400"
+            >
+              <RefreshCw
+                size={15}
+                className={isLoadingRoutes ? 'animate-spin' : ''}
+              />
+              โหลดใหม่
+            </button>
+          </div>
 
           <div className="flex gap-2">
             <div className="relative flex-1">
               <select
                 value={route}
                 onChange={(event) => setRoute(event.target.value)}
-                className="w-full appearance-none bg-slate-50 border-2 border-blue-500 rounded-xl p-3 sm:p-4 pr-10 sm:pr-12 text-lg sm:text-xl font-bold text-slate-800 focus:outline-none transition-colors"
+                disabled={isLoadingRoutes || routes.length === 0}
+                className="w-full appearance-none bg-slate-50 border-2 border-blue-500 rounded-xl p-3 sm:p-4 pr-10 sm:pr-12 text-lg sm:text-xl font-bold text-slate-800 focus:outline-none transition-colors disabled:border-slate-300 disabled:text-slate-400"
               >
                 <option value="" disabled>
-                  เลือก Route
+                  {isLoadingRoutes
+                    ? 'กำลังโหลด Route...'
+                    : routes.length === 0
+                      ? 'ไม่พบ Route'
+                      : 'เลือก Route'}
                 </option>
 
-                {ROUTES.map((routeName) => (
+                {routes.map((routeName) => (
                   <option key={routeName} value={routeName}>
                     {routeName}
                   </option>
@@ -388,12 +480,29 @@ export default function App() {
             <button
               type="button"
               onClick={() => setIsScanning(true)}
+              disabled={isLoadingRoutes || routes.length === 0}
               aria-label="สแกน Route"
-              className="bg-blue-100 text-blue-700 w-[60px] h-[60px] rounded-xl border-2 border-blue-200 active:bg-blue-200 flex items-center justify-center shrink-0 transition-colors"
+              className="bg-blue-100 text-blue-700 w-[60px] h-[60px] rounded-xl border-2 border-blue-200 active:bg-blue-200 flex items-center justify-center shrink-0 transition-colors disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200"
             >
               <ScanLine size={28} />
             </button>
           </div>
+
+          {routeError && (
+            <div className="mt-3 bg-red-50 border border-red-200 rounded-xl p-3 flex items-center justify-between gap-3">
+              <p className="text-red-700 text-sm font-semibold">
+                {routeError}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => void loadRoutes()}
+                className="shrink-0 text-red-700 bg-red-100 px-3 py-2 rounded-lg text-xs font-bold"
+              >
+                ลองใหม่
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="bg-white flex-1 p-5 rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col mb-2">
@@ -490,10 +599,10 @@ export default function App() {
           <button
             type="button"
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={isSaving || isLoadingRoutes || routes.length === 0}
             className={`w-full h-full text-2xl font-black uppercase tracking-widest rounded-2xl shadow-xl active:scale-[0.99] transition-all flex items-center justify-center gap-4 ${
-              isSaving
-                ? 'bg-blue-400 text-white cursor-wait'
+              isSaving || isLoadingRoutes || routes.length === 0
+                ? 'bg-blue-300 text-white cursor-not-allowed'
                 : 'bg-blue-700 text-white active:bg-blue-900'
             }`}
           >
@@ -624,7 +733,10 @@ export default function App() {
                   tabIndex={0}
                   onClick={() => setFocusedField('sub-quantity')}
                   onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
+                    if (
+                      event.key === 'Enter' ||
+                      event.key === ' '
+                    ) {
                       setFocusedField('sub-quantity');
                     }
                   }}
@@ -678,10 +790,7 @@ export default function App() {
 
       {isScanning && (
         <Scanner
-          onScan={(scannedRoute) => {
-            setRoute(scannedRoute);
-            setIsScanning(false);
-          }}
+          onScan={handleScannedRoute}
           onClose={() => setIsScanning(false)}
         />
       )}
