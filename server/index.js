@@ -24,13 +24,18 @@ const allowedOrigins = (
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-function verifyOrigin(origin, callback) {
+function verifyOrigin(
+  origin,
+  callback
+) {
   if (!origin) {
     callback(null, true);
     return;
   }
 
-  if (allowedOrigins.includes(origin)) {
+  if (
+    allowedOrigins.includes(origin)
+  ) {
     callback(null, true);
     return;
   }
@@ -78,6 +83,32 @@ function createBangkokTimestamp() {
   ).format(new Date());
 }
 
+async function readJsonResponse(
+  response
+) {
+  const responseText =
+    await response.text();
+
+  if (!responseText) {
+    throw new Error(
+      'Google Apps Script returned an empty response'
+    );
+  }
+
+  try {
+    return JSON.parse(responseText);
+  } catch {
+    console.error(
+      'Invalid Google Apps Script response:',
+      responseText
+    );
+
+    throw new Error(
+      'Google Apps Script returned invalid JSON'
+    );
+  }
+}
+
 app.disable('x-powered-by');
 
 app.use(
@@ -107,8 +138,118 @@ app.get(
     response.status(200).json({
       success: true,
       service: 'SPT API',
-      timestamp: new Date().toISOString(),
+      timestamp:
+        new Date().toISOString(),
     });
+  }
+);
+
+app.get(
+  '/api/routes',
+  async (_request, response) => {
+    try {
+      const scriptUrl =
+        process.env.GOOGLE_SCRIPT_URL;
+
+      if (
+        !scriptUrl ||
+        !scriptUrl.trim()
+      ) {
+        response.status(500).json({
+          success: false,
+          routes: [],
+          message:
+            'ยังไม่ได้กำหนด GOOGLE_SCRIPT_URL',
+        });
+
+        return;
+      }
+
+      const separator =
+        scriptUrl.includes('?')
+          ? '&'
+          : '?';
+
+      const routesUrl =
+        `${scriptUrl.trim()}` +
+        `${separator}action=routes`;
+
+      const scriptResponse =
+        await fetch(
+          routesUrl,
+          {
+            method: 'GET',
+            headers: {
+              Accept:
+                'application/json',
+            },
+            redirect: 'follow',
+          }
+        );
+
+      const result =
+        await readJsonResponse(
+          scriptResponse
+        );
+
+      if (
+        !scriptResponse.ok ||
+        !result.success
+      ) {
+        throw new Error(
+          result.message ||
+            'ไม่สามารถอ่าน Route จาก Google Sheet ได้'
+        );
+      }
+
+      const routes =
+        Array.isArray(result.routes)
+          ? result.routes
+              .map((route) => {
+                return String(
+                  route
+                ).trim();
+              })
+              .filter((route) => {
+                return route !== '';
+              })
+              .filter(
+                (
+                  route,
+                  index,
+                  routeList
+                ) => {
+                  return (
+                    routeList.indexOf(
+                      route
+                    ) === index
+                  );
+                }
+              )
+          : [];
+
+      response.status(200).json({
+        success: true,
+        routes,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : String(error);
+
+      console.error(
+        'Unable to load routes:',
+        errorMessage
+      );
+
+      response.status(500).json({
+        success: false,
+        routes: [],
+        message:
+          'ไม่สามารถโหลดรายการ Route ได้',
+      });
+    }
   }
 );
 
@@ -141,13 +282,16 @@ app.post(
       ) {
         response.status(400).json({
           success: false,
-          message: 'กรุณาระบุ Route',
+          message:
+            'กรุณาระบุ Route',
         });
 
         return;
       }
 
-      if (route.trim().length > 200) {
+      if (
+        route.trim().length > 200
+      ) {
         response.status(400).json({
           success: false,
           message:
@@ -171,48 +315,66 @@ app.post(
       }
 
       const quantities = {
-        green: parseQuantity(green),
-        cream: parseQuantity(cream),
-        blue: parseQuantity(blue),
+        green:
+          parseQuantity(green),
+        cream:
+          parseQuantity(cream),
+        blue:
+          parseQuantity(blue),
         boxSleeve:
           parseQuantity(boxSleeve),
-        wing: parseQuantity(wing),
-        glass: parseQuantity(glass),
-        wood: parseQuantity(wood),
+        wing:
+          parseQuantity(wing),
+        glass:
+          parseQuantity(glass),
+        wood:
+          parseQuantity(wood),
       };
 
       const returnQuantities = {
         returnGreen:
-          parseQuantity(returnGreen),
+          parseQuantity(
+            returnGreen
+          ),
         returnCream:
-          parseQuantity(returnCream),
+          parseQuantity(
+            returnCream
+          ),
         returnBlue:
-          parseQuantity(returnBlue),
+          parseQuantity(
+            returnBlue
+          ),
         returnBoxSleeve:
           parseQuantity(
             returnBoxSleeve
           ),
         returnWing:
-          parseQuantity(returnWing),
+          parseQuantity(
+            returnWing
+          ),
         returnGlass:
-          parseQuantity(returnGlass),
+          parseQuantity(
+            returnGlass
+          ),
         returnWood:
-          parseQuantity(returnWood),
+          parseQuantity(
+            returnWood
+          ),
       };
 
       const hasInvalidQuantity =
-        Object.values(quantities).some(
-          (quantity) =>
-            quantity === null
-        );
+        Object.values(
+          quantities
+        ).some((quantity) => {
+          return quantity === null;
+        });
 
       const hasInvalidReturnQuantity =
         Object.values(
           returnQuantities
-        ).some(
-          (quantity) =>
-            quantity === null
-        );
+        ).some((quantity) => {
+          return quantity === null;
+        });
 
       if (
         hasInvalidQuantity ||
@@ -228,9 +390,12 @@ app.post(
       }
 
       const mainPalletTotal =
-        Object.values(quantities).reduce(
-          (total, quantity) =>
-            total + quantity,
+        Object.values(
+          quantities
+        ).reduce(
+          (total, quantity) => {
+            return total + quantity;
+          },
           0
         );
 
@@ -238,8 +403,9 @@ app.post(
         Object.values(
           returnQuantities
         ).reduce(
-          (total, quantity) =>
-            total + quantity,
+          (total, quantity) => {
+            return total + quantity;
+          },
           0
         );
 
@@ -263,30 +429,43 @@ app.post(
         await appendPalletTransaction({
           stampTime,
           route: route.trim(),
-          green: quantities.green,
-          cream: quantities.cream,
-          blue: quantities.blue,
+          green:
+            quantities.green,
+          cream:
+            quantities.cream,
+          blue:
+            quantities.blue,
           boxSleeve:
             quantities.boxSleeve,
-          wing: quantities.wing,
-          glass: quantities.glass,
-          wood: quantities.wood,
-          sub: sub.trim(),
+          wing:
+            quantities.wing,
+          glass:
+            quantities.glass,
+          wood:
+            quantities.wood,
+          sub:
+            sub.trim(),
           returnGreen:
-            returnQuantities.returnGreen,
+            returnQuantities
+              .returnGreen,
           returnCream:
-            returnQuantities.returnCream,
+            returnQuantities
+              .returnCream,
           returnBlue:
-            returnQuantities.returnBlue,
+            returnQuantities
+              .returnBlue,
           returnBoxSleeve:
             returnQuantities
               .returnBoxSleeve,
           returnWing:
-            returnQuantities.returnWing,
+            returnQuantities
+              .returnWing,
           returnGlass:
-            returnQuantities.returnGlass,
+            returnQuantities
+              .returnGlass,
           returnWood:
-            returnQuantities.returnWood,
+            returnQuantities
+              .returnWood,
           returnTotal:
             calculatedReturnTotal,
         });
