@@ -5,10 +5,10 @@ export type PalletType =
   | 'Box Sleeve'
   | 'Wing'
   | 'Glass'
-  | 'Wood'
-  | 'Pallet return';
+  | 'Wood';
 
-export type PalletData = Record<PalletType, string>;
+export type PalletData =
+  Record<PalletType, string>;
 
 export const PALLET_TYPES: PalletType[] = [
   'Green',
@@ -18,5 +18,4 @@ export const PALLET_TYPES: PalletType[] = [
   'Wing',
   'Glass',
   'Wood',
-  'Pallet return',
 ];
