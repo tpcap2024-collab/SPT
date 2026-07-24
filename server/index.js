@@ -24,9 +24,7 @@ const allowedOrigins = (
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-// ตรวจสอบว่าเว็บไซต์ต้นทางได้รับอนุญาตหรือไม่
 function verifyOrigin(origin, callback) {
-  // อนุญาตคำขอที่ไม่มี Origin เช่น Render Health Check
   if (!origin) {
     callback(null, true);
     return;
@@ -50,7 +48,6 @@ function verifyOrigin(origin, callback) {
   callback(error);
 }
 
-// แปลงค่าและตรวจสอบจำนวนพาเลท
 function parseQuantity(value) {
   const quantity = Number(value);
 
@@ -65,7 +62,6 @@ function parseQuantity(value) {
   return quantity;
 }
 
-// สร้างวันที่และเวลาตามเขตเวลาไทย
 function createBangkokTimestamp() {
   return new Intl.DateTimeFormat(
     'th-TH',
@@ -82,10 +78,8 @@ function createBangkokTimestamp() {
   ).format(new Date());
 }
 
-// ซ่อนข้อมูล Express จาก response header
 app.disable('x-powered-by');
 
-// ตั้งค่า CORS
 app.use(
   cors({
     origin: verifyOrigin,
@@ -101,14 +95,12 @@ app.use(
   })
 );
 
-// จำกัดขนาด JSON ที่รับเข้ามา
 app.use(
   express.json({
     limit: '100kb',
   })
 );
 
-// ตรวจสอบสถานะของ Server
 app.get(
   '/api/health',
   (_request, response) => {
@@ -120,7 +112,6 @@ app.get(
   }
 );
 
-// รับข้อมูลพาเลทและบันทึกลง Google Sheet
 app.post(
   '/api/pallets',
   async (request, response) => {
@@ -135,10 +126,15 @@ app.post(
         glass = 0,
         wood = 0,
         sub = '',
-        palletReturn = 0,
+        returnGreen = 0,
+        returnCream = 0,
+        returnBlue = 0,
+        returnBoxSleeve = 0,
+        returnWing = 0,
+        returnGlass = 0,
+        returnWood = 0,
       } = request.body ?? {};
 
-      // ตรวจสอบ Route
       if (
         typeof route !== 'string' ||
         !route.trim()
@@ -161,7 +157,19 @@ app.post(
         return;
       }
 
-      // ตรวจสอบจำนวนพาเลท
+      if (
+        typeof sub !== 'string' ||
+        sub.length > 5000
+      ) {
+        response.status(400).json({
+          success: false,
+          message:
+            'ข้อมูล Sub ไม่ถูกต้อง',
+        });
+
+        return;
+      }
+
       const quantities = {
         green: parseQuantity(green),
         cream: parseQuantity(cream),
@@ -171,16 +179,45 @@ app.post(
         wing: parseQuantity(wing),
         glass: parseQuantity(glass),
         wood: parseQuantity(wood),
-        palletReturn:
-          parseQuantity(palletReturn),
+      };
+
+      const returnQuantities = {
+        returnGreen:
+          parseQuantity(returnGreen),
+        returnCream:
+          parseQuantity(returnCream),
+        returnBlue:
+          parseQuantity(returnBlue),
+        returnBoxSleeve:
+          parseQuantity(
+            returnBoxSleeve
+          ),
+        returnWing:
+          parseQuantity(returnWing),
+        returnGlass:
+          parseQuantity(returnGlass),
+        returnWood:
+          parseQuantity(returnWood),
       };
 
       const hasInvalidQuantity =
         Object.values(quantities).some(
-          (quantity) => quantity === null
+          (quantity) =>
+            quantity === null
         );
 
-      if (hasInvalidQuantity) {
+      const hasInvalidReturnQuantity =
+        Object.values(
+          returnQuantities
+        ).some(
+          (quantity) =>
+            quantity === null
+        );
+
+      if (
+        hasInvalidQuantity ||
+        hasInvalidReturnQuantity
+      ) {
         response.status(400).json({
           success: false,
           message:
@@ -190,39 +227,25 @@ app.post(
         return;
       }
 
-      // ตรวจสอบข้อมูล Sub
-      if (typeof sub !== 'string') {
-        response.status(400).json({
-          success: false,
-          message:
-            'รูปแบบข้อมูล Sub ไม่ถูกต้อง',
-        });
-
-        return;
-      }
-
-      if (sub.length > 5000) {
-        response.status(400).json({
-          success: false,
-          message:
-            'ข้อมูล Sub มีความยาวเกินกำหนด',
-        });
-
-        return;
-      }
-
-      // ตรวจสอบว่ามีจำนวนพาเลทอย่างน้อยหนึ่งรายการ
       const mainPalletTotal =
         Object.values(quantities).reduce(
-          (total, quantity) => {
-            return total + quantity;
-          },
+          (total, quantity) =>
+            total + quantity,
+          0
+        );
+
+      const calculatedReturnTotal =
+        Object.values(
+          returnQuantities
+        ).reduce(
+          (total, quantity) =>
+            total + quantity,
           0
         );
 
       if (
         mainPalletTotal === 0 &&
-        !sub.trim()
+        calculatedReturnTotal === 0
       ) {
         response.status(400).json({
           success: false,
@@ -236,7 +259,6 @@ app.post(
       const stampTime =
         createBangkokTimestamp();
 
-      // ส่งข้อมูลไปยัง Google Sheets module
       const result =
         await appendPalletTransaction({
           stampTime,
@@ -250,18 +272,49 @@ app.post(
           glass: quantities.glass,
           wood: quantities.wood,
           sub: sub.trim(),
-          palletReturn:
-            quantities.palletReturn,
+          returnGreen:
+            returnQuantities.returnGreen,
+          returnCream:
+            returnQuantities.returnCream,
+          returnBlue:
+            returnQuantities.returnBlue,
+          returnBoxSleeve:
+            returnQuantities
+              .returnBoxSleeve,
+          returnWing:
+            returnQuantities.returnWing,
+          returnGlass:
+            returnQuantities.returnGlass,
+          returnWood:
+            returnQuantities.returnWood,
+          returnTotal:
+            calculatedReturnTotal,
         });
 
       response.status(201).json({
         success: true,
         message:
           'บันทึกข้อมูลเรียบร้อยแล้ว',
-        updatedRange:
-          result.updatedRange,
+        updatedRow:
+          result.updatedRow,
         updatedRows:
           result.updatedRows,
+        returnGreen:
+          result.returnGreen,
+        returnCream:
+          result.returnCream,
+        returnBlue:
+          result.returnBlue,
+        returnBoxSleeve:
+          result.returnBoxSleeve,
+        returnWing:
+          result.returnWing,
+        returnGlass:
+          result.returnGlass,
+        returnWood:
+          result.returnWood,
+        returnTotal:
+          result.returnTotal,
       });
     } catch (error) {
       const errorMessage =
@@ -283,7 +336,6 @@ app.post(
   }
 );
 
-// จัดการ URL ที่ไม่มีในระบบ
 app.use(
   (_request, response) => {
     response.status(404).json({
@@ -294,7 +346,6 @@ app.use(
   }
 );
 
-// จัดการ JSON ผิดรูปแบบและ CORS error
 app.use(
   (
     error,
@@ -333,7 +384,6 @@ app.use(
   }
 );
 
-// เปิด Server สำหรับ Render
 app.listen(
   PORT,
   '0.0.0.0',
