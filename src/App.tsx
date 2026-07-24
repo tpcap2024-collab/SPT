@@ -220,8 +220,7 @@ export default function App() {
     try {
       const subPalletsText = subPallets
         .map((item) => `${item.name} (${item.type}: ${item.quantity})`)
-        .join('
-');
+        .join('\n');
 
       const returnTotals: Record<PalletType, number> = {
         Green: 0,
