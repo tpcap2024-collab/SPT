@@ -33,6 +33,12 @@ export interface PalletApiResponse {
   returnTotal?: number;
 }
 
+export interface RoutesApiResponse {
+  success: boolean;
+  routes: string[];
+  message?: string;
+}
+
 const API_URL = String(
   import.meta.env.VITE_API_URL || ''
 ).replace(/\/+$/, '');
@@ -170,9 +176,9 @@ function validatePayload(
   }
 }
 
-async function readApiResponse(
+async function readJsonResponse<T>(
   response: Response
-): Promise<PalletApiResponse> {
+): Promise<T> {
   const contentType =
     response.headers.get(
       'content-type'
@@ -187,32 +193,26 @@ async function readApiResponse(
       await response.text();
 
     console.error(
-      'Unexpected Render API response:',
+      'Unexpected API response:',
       responseText
     );
 
-    return {
-      success: false,
-      message:
-        'Render Server ส่งข้อมูลกลับมาไม่ถูกต้อง',
-    };
+    throw new Error(
+      'Render Server ส่งข้อมูลกลับมาไม่ถูกต้อง'
+    );
   }
 
   try {
-    return (
-      await response.json()
-    ) as PalletApiResponse;
+    return await response.json() as T;
   } catch (error) {
     console.error(
-      'Unable to read Render API response:',
+      'Unable to read API response:',
       error
     );
 
-    return {
-      success: false,
-      message:
-        'ไม่สามารถอ่านข้อมูลตอบกลับจาก Render Server ได้',
-    };
+    throw new Error(
+      'ไม่สามารถอ่านข้อมูลตอบกลับจาก Render Server ได้'
+    );
   }
 }
 
@@ -290,7 +290,9 @@ export async function savePalletData(
   }
 
   const result =
-    await readApiResponse(response);
+    await readJsonResponse<PalletApiResponse>(
+      response
+    );
 
   if (
     !response.ok ||
@@ -333,4 +335,79 @@ export async function savePalletData(
   }
 
   return result;
+}
+
+export async function getRoutes(): Promise<RoutesApiResponse> {
+  if (!API_URL) {
+    throw new Error(
+      'ไม่พบ VITE_API_URL กรุณาตั้งค่า URL ของ Render API'
+    );
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetch(
+      `${API_URL}/api/routes`,
+      {
+        method: 'GET',
+        headers: {
+          Accept:
+            'application/json',
+        },
+      }
+    );
+  } catch (error) {
+    console.error(
+      'Unable to load routes:',
+      error
+    );
+
+    throw new Error(
+      'ไม่สามารถเชื่อมต่อ Server เพื่อโหลด Route ได้'
+    );
+  }
+
+  const result =
+    await readJsonResponse<RoutesApiResponse>(
+      response
+    );
+
+  if (
+    !response.ok ||
+    !result.success
+  ) {
+    throw new Error(
+      result.message ||
+        'ไม่สามารถโหลดรายการ Route ได้'
+    );
+  }
+
+  const routes =
+    Array.isArray(result.routes)
+      ? result.routes
+          .map((route) => {
+            return String(route).trim();
+          })
+          .filter((route) => {
+            return route !== '';
+          })
+          .filter(
+            (
+              route,
+              index,
+              routeList
+            ) => {
+              return (
+                routeList.indexOf(route) ===
+                index
+              );
+            }
+          )
+      : [];
+
+  return {
+    success: true,
+    routes,
+  };
 }
