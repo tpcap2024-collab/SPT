@@ -36,7 +36,7 @@ const INITIAL_PALLETS: PalletData = {
   Wing: '',
   Glass: '',
   Wood: '',
-  'Pallet return': '',
+
 };
 
 interface SubPallet {
@@ -211,6 +211,32 @@ export default function App() {
       const subPalletsText = subPallets
         .map((item) => `${item.name} (${item.type}: ${item.quantity})`)
         .join('\n');
+
+      const returnTotals: Record<
+        PalletType,
+        number
+      > = {
+        Green: 0,
+        Cream: 0,
+        Blue: 0,
+        'Box Sleeve': 0,
+        Wing: 0,
+        Glass: 0,
+        Wood: 0,
+      };
+
+subPallets.forEach((item) => {
+  returnTotals[item.type] +=
+    Number(item.quantity || 0);
+});
+
+const returnTotal =
+  Object.values(returnTotals).reduce(
+    (total, quantity) => {
+      return total + quantity;
+    },
+    0
+  );
 
       await savePalletData({
         route,
