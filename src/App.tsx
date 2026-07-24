@@ -36,7 +36,6 @@ const INITIAL_PALLETS: PalletData = {
   Wing: '',
   Glass: '',
   Wood: '',
-
 };
 
 interface SubPallet {
@@ -147,9 +146,14 @@ export default function App() {
       return;
     }
 
-    const currentIndex = PALLET_TYPES.indexOf(focusedField as PalletType);
+    const currentIndex = PALLET_TYPES.indexOf(
+      focusedField as PalletType
+    );
 
-    if (currentIndex >= 0 && currentIndex < PALLET_TYPES.length - 1) {
+    if (
+      currentIndex >= 0 &&
+      currentIndex < PALLET_TYPES.length - 1
+    ) {
       setFocusedField(PALLET_TYPES[currentIndex + 1]);
     } else {
       setFocusedField(null);
@@ -158,7 +162,10 @@ export default function App() {
 
   const handleIncrement = (type: PalletType) => {
     setPallets((previousPallets) => {
-      const currentValue = Number.parseInt(previousPallets[type] || '0', 10);
+      const currentValue = Number.parseInt(
+        previousPallets[type] || '0',
+        10
+      );
       const newValue = Math.min(currentValue + 1, 9999);
 
       return {
@@ -170,7 +177,10 @@ export default function App() {
 
   const handleDecrement = (type: PalletType) => {
     setPallets((previousPallets) => {
-      const currentValue = Number.parseInt(previousPallets[type] || '0', 10);
+      const currentValue = Number.parseInt(
+        previousPallets[type] || '0',
+        10
+      );
       const newValue = Math.max(currentValue - 1, 0);
 
       return {
@@ -190,7 +200,7 @@ export default function App() {
       return;
     }
 
-    const palletTotal = PALLET_TYPES.reduce(
+    const mainPalletTotal = PALLET_TYPES.reduce(
       (total, type) => total + Number(pallets[type] || 0),
       0
     );
@@ -200,7 +210,7 @@ export default function App() {
       0
     );
 
-    if (palletTotal === 0 && subPalletTotal === 0) {
+    if (mainPalletTotal === 0 && subPalletTotal === 0) {
       alert('กรุณาระบุจำนวนพาเลทอย่างน้อย 1 รายการ');
       return;
     }
@@ -210,12 +220,10 @@ export default function App() {
     try {
       const subPalletsText = subPallets
         .map((item) => `${item.name} (${item.type}: ${item.quantity})`)
-        .join('\n');
+        .join('
+');
 
-      const returnTotals: Record<
-        PalletType,
-        number
-      > = {
+      const returnTotals: Record<PalletType, number> = {
         Green: 0,
         Cream: 0,
         Blue: 0,
@@ -225,21 +233,22 @@ export default function App() {
         Wood: 0,
       };
 
-subPallets.forEach((item) => {
-  returnTotals[item.type] +=
-    Number(item.quantity || 0);
-});
+      subPallets.forEach((item) => {
+        const quantity = Number(item.quantity || 0);
+        returnTotals[item.type] = returnTotals[item.type] + quantity;
+      });
 
-const returnTotal =
-  Object.values(returnTotals).reduce(
-    (total, quantity) => {
-      return total + quantity;
-    },
-    0
-  );
+      const returnTotal =
+        returnTotals.Green +
+        returnTotals.Cream +
+        returnTotals.Blue +
+        returnTotals['Box Sleeve'] +
+        returnTotals.Wing +
+        returnTotals.Glass +
+        returnTotals.Wood;
 
       await savePalletData({
-        route,
+        route: route.trim(),
         green: Number(pallets.Green || 0),
         cream: Number(pallets.Cream || 0),
         blue: Number(pallets.Blue || 0),
@@ -248,7 +257,14 @@ const returnTotal =
         glass: Number(pallets.Glass || 0),
         wood: Number(pallets.Wood || 0),
         sub: subPalletsText,
-        palletReturn: Number(pallets['Pallet return'] || 0),
+        returnGreen: returnTotals.Green,
+        returnCream: returnTotals.Cream,
+        returnBlue: returnTotals.Blue,
+        returnBoxSleeve: returnTotals['Box Sleeve'],
+        returnWing: returnTotals.Wing,
+        returnGlass: returnTotals.Glass,
+        returnWood: returnTotals.Wood,
+        returnTotal,
       });
 
       setFocusedField(null);
@@ -309,7 +325,11 @@ const returnTotal =
       quantity: quantity.toString(),
     };
 
-    setSubPallets((previousItems) => [...previousItems, newSubPallet]);
+    setSubPallets((previousItems) => [
+      ...previousItems,
+      newSubPallet,
+    ]);
+
     setSubDraftName('');
     setSubDraftType('');
     setSubDraftQuantity('');
