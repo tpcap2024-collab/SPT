@@ -10,7 +10,7 @@ function getRequiredEnvironmentVariable(name) {
   return value.trim();
 }
 
-function normalizeQuantity(value) {
+function normalizeQuantity(value, fieldName) {
   const quantity = Number(value);
 
   if (
@@ -19,7 +19,7 @@ function normalizeQuantity(value) {
     quantity > 9999
   ) {
     throw new Error(
-      `Invalid pallet quantity: ${value}`
+      `${fieldName} must be an integer from 0 to 9999`
     );
   }
 
@@ -104,35 +104,107 @@ export async function appendPalletTransaction(
       'SPT_API_SECRET'
     );
 
+  const green = normalizeQuantity(
+    data.green,
+    'Green'
+  );
+
+  const cream = normalizeQuantity(
+    data.cream,
+    'Cream'
+  );
+
+  const blue = normalizeQuantity(
+    data.blue,
+    'Blue'
+  );
+
+  const boxSleeve = normalizeQuantity(
+    data.boxSleeve,
+    'Box Sleeve'
+  );
+
+  const wing = normalizeQuantity(
+    data.wing,
+    'Wing'
+  );
+
+  const glass = normalizeQuantity(
+    data.glass,
+    'Glass'
+  );
+
+  const wood = normalizeQuantity(
+    data.wood,
+    'Wood'
+  );
+
+  const returnGreen = normalizeQuantity(
+    data.returnGreen,
+    'Return Green'
+  );
+
+  const returnCream = normalizeQuantity(
+    data.returnCream,
+    'Return Cream'
+  );
+
+  const returnBlue = normalizeQuantity(
+    data.returnBlue,
+    'Return Blue'
+  );
+
+  const returnBoxSleeve =
+    normalizeQuantity(
+      data.returnBoxSleeve,
+      'Return Box Sleeve'
+    );
+
+  const returnWing = normalizeQuantity(
+    data.returnWing,
+    'Return Wing'
+  );
+
+  const returnGlass = normalizeQuantity(
+    data.returnGlass,
+    'Return Glass'
+  );
+
+  const returnWood = normalizeQuantity(
+    data.returnWood,
+    'Return Wood'
+  );
+
+  const calculatedReturnTotal =
+    returnGreen +
+    returnCream +
+    returnBlue +
+    returnBoxSleeve +
+    returnWing +
+    returnGlass +
+    returnWood;
+
   const payload = {
     apiSecret,
     stampTime: data.stampTime.trim(),
     route: data.route.trim(),
-    green: normalizeQuantity(
-      data.green
-    ),
-    cream: normalizeQuantity(
-      data.cream
-    ),
-    blue: normalizeQuantity(
-      data.blue
-    ),
-    boxSleeve: normalizeQuantity(
-      data.boxSleeve
-    ),
-    wing: normalizeQuantity(
-      data.wing
-    ),
-    glass: normalizeQuantity(
-      data.glass
-    ),
-    wood: normalizeQuantity(
-      data.wood
-    ),
+    green,
+    cream,
+    blue,
+    boxSleeve,
+    wing,
+    glass,
+    wood,
     sub: data.sub.trim(),
-    palletReturn: normalizeQuantity(
-      data.palletReturn
-    ),
+    returnGreen,
+    returnCream,
+    returnBlue,
+    returnBoxSleeve,
+    returnWing,
+    returnGlass,
+    returnWood,
+    returnTotal:
+      calculatedReturnTotal,
   };
 
   let response;
@@ -190,6 +262,30 @@ export async function appendPalletTransaction(
     updatedRows: 1,
     updatedRow:
       result.updatedRow || null,
+    returnGreen:
+      result.returnGreen ??
+      returnGreen,
+    returnCream:
+      result.returnCream ??
+      returnCream,
+    returnBlue:
+      result.returnBlue ??
+      returnBlue,
+    returnBoxSleeve:
+      result.returnBoxSleeve ??
+      returnBoxSleeve,
+    returnWing:
+      result.returnWing ??
+      returnWing,
+    returnGlass:
+      result.returnGlass ??
+      returnGlass,
+    returnWood:
+      result.returnWood ??
+      returnWood,
+    returnTotal:
+      result.returnTotal ??
+      calculatedReturnTotal,
     message:
       result.message ||
       'Data saved successfully',
