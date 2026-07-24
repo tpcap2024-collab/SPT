@@ -8,14 +8,29 @@ export interface PalletPayload {
   glass: number;
   wood: number;
   sub: string;
-  palletReturn: number;
+  returnGreen: number;
+  returnCream: number;
+  returnBlue: number;
+  returnBoxSleeve: number;
+  returnWing: number;
+  returnGlass: number;
+  returnWood: number;
+  returnTotal: number;
 }
 
 export interface PalletApiResponse {
   success: boolean;
   message?: string;
-  updatedRange?: string;
+  updatedRow?: number;
   updatedRows?: number;
+  returnGreen?: number;
+  returnCream?: number;
+  returnBlue?: number;
+  returnBoxSleeve?: number;
+  returnWing?: number;
+  returnGlass?: number;
+  returnWood?: number;
+  returnTotal?: number;
 }
 
 const API_URL = String(
@@ -44,31 +59,113 @@ function validatePayload(
     typeof payload.route !== 'string' ||
     !payload.route.trim()
   ) {
-    throw new Error('กรุณาเลือก Route');
+    throw new Error(
+      'กรุณาเลือก Route'
+    );
   }
 
-  validateQuantity('Green', payload.green);
-  validateQuantity('Cream', payload.cream);
-  validateQuantity('Blue', payload.blue);
+  validateQuantity(
+    'Green',
+    payload.green
+  );
+
+  validateQuantity(
+    'Cream',
+    payload.cream
+  );
+
+  validateQuantity(
+    'Blue',
+    payload.blue
+  );
+
   validateQuantity(
     'Box Sleeve',
     payload.boxSleeve
   );
-  validateQuantity('Wing', payload.wing);
-  validateQuantity('Glass', payload.glass);
-  validateQuantity('Wood', payload.wood);
+
   validateQuantity(
-    'Pallet return',
-    payload.palletReturn
+    'Wing',
+    payload.wing
+  );
+
+  validateQuantity(
+    'Glass',
+    payload.glass
+  );
+
+  validateQuantity(
+    'Wood',
+    payload.wood
+  );
+
+  validateQuantity(
+    'Return Green',
+    payload.returnGreen
+  );
+
+  validateQuantity(
+    'Return Cream',
+    payload.returnCream
+  );
+
+  validateQuantity(
+    'Return Blue',
+    payload.returnBlue
+  );
+
+  validateQuantity(
+    'Return Box Sleeve',
+    payload.returnBoxSleeve
+  );
+
+  validateQuantity(
+    'Return Wing',
+    payload.returnWing
+  );
+
+  validateQuantity(
+    'Return Glass',
+    payload.returnGlass
+  );
+
+  validateQuantity(
+    'Return Wood',
+    payload.returnWood
+  );
+
+  validateQuantity(
+    'Return Total',
+    payload.returnTotal
   );
 
   if (typeof payload.sub !== 'string') {
-    throw new Error('ข้อมูล Sub ไม่ถูกต้อง');
+    throw new Error(
+      'ข้อมูล Sub ไม่ถูกต้อง'
+    );
   }
 
   if (payload.sub.length > 5000) {
     throw new Error(
       'ข้อมูล Sub มีความยาวเกินกำหนด'
+    );
+  }
+
+  const calculatedReturnTotal =
+    payload.returnGreen +
+    payload.returnCream +
+    payload.returnBlue +
+    payload.returnBoxSleeve +
+    payload.returnWing +
+    payload.returnGlass +
+    payload.returnWood;
+
+  if (
+    payload.returnTotal !==
+    calculatedReturnTotal
+  ) {
+    throw new Error(
+      'ยอด Return Total ไม่ตรงกับยอดรวมแยกประเภท'
     );
   }
 }
@@ -77,9 +174,15 @@ async function readApiResponse(
   response: Response
 ): Promise<PalletApiResponse> {
   const contentType =
-    response.headers.get('content-type') || '';
+    response.headers.get(
+      'content-type'
+    ) || '';
 
-  if (!contentType.includes('application/json')) {
+  if (
+    !contentType.includes(
+      'application/json'
+    )
+  ) {
     const responseText =
       await response.text();
 
@@ -108,7 +211,7 @@ async function readApiResponse(
     return {
       success: false,
       message:
-        'ไม่สามารถอ่านข้อความตอบกลับจาก Render Server ได้',
+        'ไม่สามารถอ่านข้อมูลตอบกลับจาก Render Server ได้',
     };
   }
 }
@@ -132,19 +235,46 @@ export async function savePalletData(
       {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type':
+            'application/json',
+          Accept:
+            'application/json',
         },
         body: JSON.stringify({
-          route: payload.route.trim(),
-          green: payload.green,
-          cream: payload.cream,
-          blue: payload.blue,
-          boxSleeve: payload.boxSleeve,
-          wing: payload.wing,
-          glass: payload.glass,
-          wood: payload.wood,
-          sub: payload.sub,
-          palletReturn: payload.palletReturn,
+          route:
+            payload.route.trim(),
+          green:
+            payload.green,
+          cream:
+            payload.cream,
+          blue:
+            payload.blue,
+          boxSleeve:
+            payload.boxSleeve,
+          wing:
+            payload.wing,
+          glass:
+            payload.glass,
+          wood:
+            payload.wood,
+          sub:
+            payload.sub,
+          returnGreen:
+            payload.returnGreen,
+          returnCream:
+            payload.returnCream,
+          returnBlue:
+            payload.returnBlue,
+          returnBoxSleeve:
+            payload.returnBoxSleeve,
+          returnWing:
+            payload.returnWing,
+          returnGlass:
+            payload.returnGlass,
+          returnWood:
+            payload.returnWood,
+          returnTotal:
+            payload.returnTotal,
         }),
       }
     );
@@ -162,7 +292,10 @@ export async function savePalletData(
   const result =
     await readApiResponse(response);
 
-  if (!response.ok || !result.success) {
+  if (
+    !response.ok ||
+    !result.success
+  ) {
     if (response.status === 400) {
       throw new Error(
         result.message ||
@@ -182,20 +315,20 @@ export async function savePalletData(
 
     if (response.status === 404) {
       throw new Error(
-        'ไม่พบ API /api/pallets กรุณาตรวจสอบ Render Server'
+        'ไม่พบ API สำหรับบันทึกข้อมูล'
       );
     }
 
     if (response.status >= 500) {
       throw new Error(
         result.message ||
-          'Render Server หรือ Google Sheets เกิดข้อผิดพลาด'
+          'Render Server ไม่สามารถบันทึกข้อมูลลง Google Sheet ได้'
       );
     }
 
     throw new Error(
       result.message ||
-        `บันทึกข้อมูลไม่สำเร็จ (${response.status})`
+        `บันทึกข้อมูลไม่สำเร็จ รหัส ${response.status}`
     );
   }
 
