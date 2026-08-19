@@ -1,8 +1,5 @@
 import { Settings } from 'lucide-react';
-import {
-  useEffect,
-  useState,
-} from 'react';
+import { useEffect, useState } from 'react';
 
 interface HeaderProps {
   onSettingsClick?: () => void;
@@ -11,8 +8,9 @@ interface HeaderProps {
 export function Header({
   onSettingsClick,
 }: HeaderProps) {
-  const [time, setTime] =
-    useState(new Date());
+  const [time, setTime] = useState(
+    new Date()
+  );
 
   useEffect(() => {
     const timer = window.setInterval(
@@ -60,7 +58,11 @@ export function Header({
           <img
             src="/spt-logo.png"
             alt="SPT Logo"
-            className="w-14 h-14 sm:w-16 sm:h-16 rounded00 leading-tight truncate">
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover shrink-0 shadow-sm"
+          />
+
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-black text-slate-900 leading-tight truncate">
               Smart Pallet Tracking
             </h1>
 
