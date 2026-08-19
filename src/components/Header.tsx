@@ -1,5 +1,13 @@
-import { Settings } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import {
+  Maximize2,
+  Minimize2,
+  Settings,
+} from 'lucide-react';
+
+import {
+  useEffect,
+  useState,
+} from 'react';
 
 interface HeaderProps {
   onSettingsClick?: () => void;
@@ -8,9 +16,13 @@ interface HeaderProps {
 export function Header({
   onSettingsClick,
 }: HeaderProps) {
-  const [time, setTime] = useState(
-    new Date()
-  );
+  const [time, setTime] =
+    useState(new Date());
+
+  const [
+    isFullscreen,
+    setIsFullscreen,
+  ] = useState(false);
 
   useEffect(() => {
     const timer = window.setInterval(
@@ -22,6 +34,28 @@ export function Header({
 
     return () => {
       window.clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(
+        Boolean(
+          document.fullscreenElement
+        )
+      );
+    };
+
+    document.addEventListener(
+      'fullscreenchange',
+      handleFullscreenChange
+    );
+
+    return () => {
+      document.removeEventListener(
+        'fullscreenchange',
+        handleFullscreenChange
+      );
     };
   }, []);
 
@@ -51,15 +85,47 @@ export function Header({
     );
   };
 
+  const handleFullscreen = async () => {
+    try {
+      if (
+        document.fullscreenElement
+      ) {
+        await document.exitFullscreen();
+        return;
+      }
+
+      const rootElement =
+        document.documentElement;
+
+      if (
+        typeof rootElement
+          .requestFullscreen !==
+        'function'
+      ) {
+        alert(
+          'Browser นี้ไม่รองรับโหมด Full Screen'
+        );
+        return;
+      }
+
+      await rootElement.requestFullscreen();
+    } catch (error) {
+      console.error(
+        'Fullscreen error:',
+        error
+      );
+
+      alert(
+        'ไม่สามารถเปิดโหมด Full Screen ได้'
+      );
+    }
+  };
+
   return (
     <header className="w-full bg-white border-b border-slate-200 shadow-sm">
       <div className="max-w-3xl mx-auto w-full px-4 py-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <img
-            src="/spt-logo.png"
-            alt="SPT Logo"
-            className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover shrink-0 shadow-sm"
-          />
+          /spt-logo.png
 
           <div className="min-w-0">
             <h1 className="text-lg sm:text-xl font-black text-slate-900 leading-tight truncate">
@@ -73,7 +139,7 @@ export function Header({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <div className="flex flex-col items-end">
+          <div className="hidden sm:flex flex-col items-end mr-1">
             <span className="text-lg sm:text-xl font-black text-blue-700 leading-none">
               {formatTime(time)}
             </span>
@@ -83,11 +149,44 @@ export function Header({
             </span>
           </div>
 
+          <button
+            type="button"
+            onClick={handleFullscreen}
+            aria-label={
+              isFullscreen
+                ? 'ออกจากโหมดเต็มหน้าจอ'
+                : 'เปิดโหมดเต็มหน้าจอ'
+            }
+            title={
+              isFullscreen
+                ? 'ออกจาก Full Screen'
+                : 'Full Screen'
+            }
+            className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl border flex items-center justify-center transition-colors ${
+              isFullscreen
+                ? 'bg-blue-600 text-white border-blue-600 active:bg-blue-700'
+                : 'bg-blue-50 text-blue-700 border-blue-200 active:bg-blue-100'
+            }`}
+          >
+            {isFullscreen ? (
+              <Minimize2
+                size={22}
+                strokeWidth={2.5}
+              />
+            ) : (
+              <Maximize2
+                size={22}
+                strokeWidth={2.5}
+              />
+            )}
+          </button>
+
           {onSettingsClick && (
             <button
               type="button"
               onClick={onSettingsClick}
               aria-label="ตั้งค่าระบบ"
+              title="ตั้งค่าระบบ"
               className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-slate-100 text-slate-600 border border-slate-200 flex items-center justify-center active:bg-blue-100 active:text-blue-700 transition-colors"
             >
               <Settings
@@ -97,6 +196,16 @@ export function Header({
             </button>
           )}
         </div>
+      </div>
+
+      <div className="sm:hidden max-w-3xl mx-auto px-4 pb-3 flex items-center justify-between">
+        <span className="text-sm font-black text-blue-700">
+          {formatTime(time)}
+        </span>
+
+        <span className="text-xs font-semibold text-slate-500">
+          {formatDate(time)}
+        </span>
       </div>
     </header>
   );
