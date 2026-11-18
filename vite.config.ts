@@ -99,7 +99,7 @@ export default defineConfig(() => {
           runtimeCaching: [
             {
               urlPattern:
-                /\\/api\\/routes$/,
+                /\/api\/routes$/,
 
               handler:
                 'NetworkFirst',
